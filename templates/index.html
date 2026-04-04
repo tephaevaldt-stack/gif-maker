@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GIF Maker</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c27;
+    --border: #2a2a3d;
+    --accent: #00e5ff;
+    --accent2: #ff2d78;
+    --accent3: #b8ff57;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-mono); min-height: 100vh; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px; pointer-events: none; z-index: 0;
+  }
+  .container { max-width: 820px; margin: 0 auto; padding: 40px 24px; position: relative; z-index: 1; }
+
+  /* ── Header ── */
+  header { text-align: center; margin-bottom: 48px; }
+  .logo {
+    font-family: var(--font-display); font-size: 3.5rem; font-weight: 800; letter-spacing: -2px; line-height: 1;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 60%, var(--accent3) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    animation: shimmer 4s ease-in-out infinite; background-size: 200%;
+  }
+  @keyframes shimmer { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  .tagline { color: var(--muted); font-size: 0.75rem; letter-spacing: 3px; text-transform: uppercase; margin-top: 8px; }
+  .platform-badges { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+  .badge { padding: 4px 12px; border-radius: 2px; font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase; border: 1px solid; }
+  .badge-yt { border-color: #ff0000; color: #ff0000; }
+  .badge-ig { border-color: #e1306c; color: #e1306c; }
+  .badge-tt { border-color: #69c9d0; color: #69c9d0; }
+  .badge-up { border-color: var(--accent3); color: var(--accent3); }
+
+  /* ── Card ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 32px; margin-bottom: 24px; position: relative; overflow: hidden; }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent2)); opacity: 0.7; }
+  .card-label { font-size: 0.65rem; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .card-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── Source Tabs ── */
+  .source-tabs { display: flex; gap: 0; margin-bottom: 20px; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .tab-btn {
+    flex: 1; padding: 12px 8px; background: var(--surface2); color: var(--muted);
+    font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase;
+    border: none; cursor: pointer; transition: all 0.2s; border-right: 1px solid var(--border);
+  }
+  .tab-btn:last-child { border-right: none; }
+  .tab-btn.active { background: var(--surface); color: var(--accent); }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── URL Input ── */
+  .url-group { display: flex; gap: 12px; align-items: stretch; }
+  input[type="text"] {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--font-mono); font-size: 0.8rem;
+    padding: 14px 16px; border-radius: 3px; outline: none; transition: border-color 0.2s;
+  }
+  input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,229,255,0.1); }
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  /* ── Upload Area ── */
+  .upload-area {
+    border: 2px dashed var(--border); border-radius: 4px; padding: 40px 24px;
+    text-align: center; cursor: pointer; transition: all 0.2s; position: relative;
+  }
+  .upload-area:hover, .upload-area.drag-over { border-color: var(--accent); background: rgba(0,229,255,0.04); }
+  .upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .upload-title { font-family: var(--font-display); font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+  .upload-sub { font-size: 0.7rem; color: var(--muted); letter-spacing: 1px; }
+
+  .upload-progress { display: none; margin-top: 16px; }
+  .upload-progress.visible { display: block; }
+  .upload-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+  .upload-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent3)); transition: width 0.2s; width: 0%; }
+  .upload-pct { font-size: 0.7rem; color: var(--accent3); }
+
+  /* ── Buttons ── */
+  .btn { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; padding: 14px 24px; border: none; border-radius: 3px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn-primary { background: var(--accent); color: #000; font-weight: 700; }
+  .btn-primary:hover { background: #33eaff; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-generate { background: linear-gradient(135deg, var(--accent2), #ff6b9d); color: #fff; font-weight: 700; width: 100%; padding: 16px; font-size: 0.8rem; }
+  .btn-generate:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-generate:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* ── Video Info ── */
+  .video-info { display: none; gap: 16px; align-items: center; padding: 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; margin-top: 16px; }
+  .video-info.visible { display: flex; }
+  .video-thumb { width: 80px; height: 50px; object-fit: cover; border-radius: 2px; border: 1px solid var(--border); }
+  .video-meta { flex: 1; min-width: 0; }
+  .video-title { font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+  .video-dur { font-size: 0.7rem; color: var(--accent3); letter-spacing: 1px; }
+
+  /* ── Player ── */
+  .player-wrapper { margin-top: 20px; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; background: #000; display: none; }
+  #ytPlayer, #nativePlayer { display: block; width: 100%; }
+  #ytPlayer { aspect-ratio: 16/9; }
+  #nativePlayer { max-height: 420px; background: #000; }
+
+  .player-controls {
+    display: flex; gap: 10px; padding: 12px 16px;
+    background: var(--surface2); border-top: 1px solid var(--border);
+    align-items: center; flex-wrap: wrap;
+  }
+  .player-time-display { font-size: 0.8rem; color: var(--accent); font-family: var(--font-mono); min-width: 55px; font-weight: 700; }
+  .btn-mark { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; padding: 10px 18px; border-radius: 3px; cursor: pointer; transition: all 0.15s; font-weight: 700; }
+  .btn-mark-start { background: rgba(0,229,255,0.12); color: var(--accent); border: 1px solid var(--accent); }
+  .btn-mark-start:hover { background: rgba(0,229,255,0.25); }
+  .btn-mark-end { background: rgba(255,45,120,0.12); color: var(--accent2); border: 1px solid var(--accent2); }
+  .btn-mark-end:hover { background: rgba(255,45,120,0.25); }
+  .mark-feedback { font-size: 0.65rem; color: var(--accent3); letter-spacing: 1px; margin-left: auto; min-width: 140px; text-align: right; }
+  .player-hint { font-size: 0.65rem; color: var(--muted); padding: 8px 16px; background: var(--surface); border-top: 1px solid var(--border); }
+
+  /* ── Timeline ── */
+  .timeline-wrapper { margin: 24px 0 8px; }
+  .timeline-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--muted); margin-bottom: 8px; }
+  .timeline-track { position: relative; height: 44px; background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; cursor: pointer; overflow: hidden; }
+  .timeline-fill { position: absolute; top: 0; bottom: 0; background: linear-gradient(90deg, rgba(0,229,255,0.2), rgba(255,45,120,0.2)); border-left: 2px solid var(--accent); border-right: 2px solid var(--accent2); pointer-events: none; }
+  .timeline-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.55); pointer-events: none; display: none; transform: translateX(-50%); z-index: 3; }
+  .timeline-playhead::before { content: ''; position: absolute; top: -1px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 7px solid rgba(255,255,255,0.7); }
+  .timeline-handle { position: absolute; top: 50%; transform: translate(-50%,-50%); width: 14px; height: 30px; background: var(--accent); border-radius: 2px; cursor: grab; z-index: 4; }
+  .timeline-handle.end { background: var(--accent2); }
+  .timeline-handle:active { cursor: grabbing; }
+  .timeline-time-display { display: flex; justify-content: space-between; margin-top: 12px; }
+  .time-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; padding: 8px 16px; font-size: 0.8rem; text-align: center; min-width: 100px; }
+  .time-box .label { font-size: 0.6rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+  .time-box .value { color: var(--accent); font-weight: 700; margin-top: 2px; }
+  .time-box.end .value { color: var(--accent2); }
+  .duration-badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; padding: 8px 16px; font-size: 0.75rem; text-align: center; color: var(--accent3); }
+
+  /* ── Settings ── */
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
+  .setting-group label { display: block; font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  select { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: var(--font-mono); font-size: 0.8rem; padding: 10px 12px; border-radius: 3px; outline: none; appearance: none; cursor: pointer; }
+
+  /* ── Status ── */
+  .status-area { display: none; margin-top: 24px; }
+  .status-area.visible { display: block; }
+  .status-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 16px; }
+  .status-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px; }
+  .status-bar-fill.indeterminate { animation: indeterminate 1.5s ease-in-out infinite; width: 40%; }
+  @keyframes indeterminate { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
+  .status-text { font-size: 0.75rem; color: var(--muted); letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+
+  /* ── Result ── */
+  .result-area { display: none; margin-top: 24px; }
+  .result-area.visible { display: block; }
+  .gif-preview { width: 100%; border-radius: 4px; border: 1px solid var(--border); margin-bottom: 16px; display: block; }
+  .result-meta { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .meta-chip { padding: 6px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 2px; font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase; color: var(--accent3); }
+  .btn-download { background: var(--accent3); color: #000; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; padding: 14px 32px; border: none; border-radius: 3px; cursor: pointer; font-weight: 700; width: 100%; transition: all 0.15s; }
+  .btn-download:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+  /* ── Error / Warning ── */
+  .error-msg { display: none; background: rgba(255,45,120,0.1); border: 1px solid rgba(255,45,120,0.3); border-radius: 3px; padding: 16px; font-size: 0.75rem; color: var(--accent2); margin-top: 16px; }
+  .error-msg.visible { display: block; }
+  .warning { font-size: 0.7rem; color: var(--muted); text-align: center; margin-top: 8px; }
+  .warning span { color: #ffd166; }
+  .info-note { display: none; margin-top: 12px; padding: 12px 16px; background: rgba(255,209,102,0.08); border: 1px solid rgba(255,209,102,0.2); border-radius: 3px; font-size: 0.7rem; color: #ffd166; }
+  .info-note.visible { display: block; }
+
+  footer { text-align: center; color: var(--muted); font-size: 0.65rem; letter-spacing: 2px; margin-top: 48px; padding-bottom: 24px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">GIF·MAKER</div>
+    <div class="tagline">Recorte · Converta · Compartilhe</div>
+    <div class="platform-badges">
+      <span class="badge badge-yt">YouTube</span>
+      <span class="badge badge-ig">Instagram</span>
+      <span class="badge badge-tt">TikTok</span>
+      <span class="badge badge-up">Upload</span>
+    </div>
+  </header>
+
+  <!-- ── Step 1: Source ── -->
+  <div class="card">
+    <div class="card-label">01 — Escolha a fonte do vídeo</div>
+
+    <div class="source-tabs">
+      <button class="tab-btn active" onclick="switchTab('url')">🔗 URL (YT / IG / TT)</button>
+      <button class="tab-btn" onclick="switchTab('upload')">📁 Arquivo do computador</button>
+    </div>
+
+    <!-- URL tab -->
+    <div class="tab-panel active" id="tab-url">
+      <div class="url-group">
+        <input type="text" id="urlInput" placeholder="https://youtube.com/watch?v=...  |  instagram.com/...  |  tiktok.com/..." />
+        <button class="btn btn-primary" id="fetchBtn" onclick="fetchInfo()">Buscar</button>
+      </div>
+    </div>
+
+    <!-- Upload tab -->
+    <div class="tab-panel" id="tab-upload">
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="fileInput" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm,.mp4,.mov,.avi,.mkv,.webm,.m4v" onchange="handleFileSelect(this.files[0])">
+        <div class="upload-icon">🎬</div>
+        <div class="upload-title">Arraste o vídeo aqui</div>
+        <div class="upload-sub">ou clique para escolher · MP4, MOV, AVI, MKV, WEBM · até 500MB</div>
+      </div>
+      <div class="upload-progress" id="uploadProgress">
+        <div class="upload-bar"><div class="upload-bar-fill" id="uploadBarFill"></div></div>
+        <div class="upload-pct" id="uploadPct">Enviando... 0%</div>
+      </div>
+    </div>
+
+    <!-- Video info strip (shared) -->
+    <div class="video-info" id="videoInfo">
+      <img class="video-thumb" id="videoThumb" src="" alt="">
+      <div class="video-meta">
+        <div class="video-title" id="videoTitle"></div>
+        <div class="video-dur" id="videoDur"></div>
+      </div>
+    </div>
+
+    <!-- Player -->
+    <div class="player-wrapper" id="playerWrapper">
+      <div id="ytPlayer"></div>
+      <video id="nativePlayer" controls preload="metadata" style="display:none"></video>
+      <div class="player-controls">
+        <span class="player-time-display" id="playerTimeLbl">00:00</span>
+        <button class="btn-mark btn-mark-start" onclick="markStart()">◀ Marcar Início</button>
+        <button class="btn-mark btn-mark-end" onclick="markEnd()">Marcar Fim ▶</button>
+        <span class="mark-feedback" id="markFeedback"></span>
+      </div>
+      <div class="player-hint">▶ Assista e clique nos botões para marcar o início e fim do trecho</div>
+    </div>
+
+    <div class="info-note" id="infoNote"></div>
+    <div class="error-msg" id="fetchError"></div>
+  </div>
+
+  <!-- ── Step 2: Timeline ── -->
+  <div class="card" id="timelineCard" style="display:none">
+    <div class="card-label">02 — Ajuste o trecho</div>
+    <div class="timeline-wrapper">
+      <div class="timeline-labels">
+        <span>00:00</span>
+        <span id="totalDurLabel">00:00</span>
+      </div>
+      <div class="timeline-track" id="track">
+        <div class="timeline-fill" id="fill"></div>
+        <div class="timeline-playhead" id="playhead"></div>
+        <div class="timeline-handle" id="handleStart"></div>
+        <div class="timeline-handle end" id="handleEnd"></div>
+      </div>
+    </div>
+    <div class="timeline-time-display">
+      <div class="time-box"><div class="label">Início</div><div class="value" id="startDisplay">00:00</div></div>
+      <div class="duration-badge" id="durationBadge">⏱ 5s</div>
+      <div class="time-box end"><div class="label">Fim</div><div class="value" id="endDisplay">00:05</div></div>
+    </div>
+    <div class="warning" id="durationWarning" style="display:none"><span>⚠ Máximo recomendado: 60 segundos</span></div>
+  </div>
+
+  <!-- ── Step 3: Settings + Generate ── -->
+  <div class="card" id="settingsCard" style="display:none">
+    <div class="card-label">03 — Configurações do GIF</div>
+    <div class="settings-grid">
+      <div class="setting-group">
+        <label>Largura (px)</label>
+        <select id="widthSelect">
+          <option value="320">320px — Menor / + leve</option>
+          <option value="480" selected>480px — Equilibrado</option>
+          <option value="640">640px — Maior qualidade</option>
+          <option value="720">720px — Alta qualidade</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label>FPS</label>
+        <select id="fpsSelect">
+          <option value="8">8 FPS — Menor tamanho</option>
+          <option value="10" selected>10 FPS — Padrão</option>
+          <option value="15">15 FPS — Fluido</option>
+          <option value="20">20 FPS — Muito fluido</option>
+        </select>
+      </div>
+    </div>
+    <p class="warning" style="margin-top:16px">O app tentará manter o GIF abaixo de <span>20MB</span> automaticamente.</p>
+    <br>
+    <button class="btn btn-generate" id="generateBtn" onclick="generateGif()">⚡ Gerar GIF</button>
+
+    <div class="status-area" id="statusArea">
+      <div class="status-bar"><div class="status-bar-fill indeterminate"></div></div>
+      <div class="status-text"><div class="dot"></div><span id="statusText">Processando...</span></div>
+    </div>
+
+    <div class="result-area" id="resultArea">
+      <img class="gif-preview" id="gifPreview" src="" alt="GIF">
+      <div class="result-meta" id="resultMeta"></div>
+      <button class="btn btn-download" id="downloadBtn">⬇ Baixar GIF</button>
+    </div>
+
+    <div class="error-msg" id="generateError"></div>
+  </div>
+</div>
+
+<footer>GIF MAKER · Powered by yt-dlp + ffmpeg · Uso pessoal</footer>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+// Auto-detect: local dev uses absolute URL, production uses relative
+const API = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'
+  ? 'http://127.0.0.1:5000/api'
+  : '/api';
+
+// State
+let videoDuration = 0;
+let startTime = 0, endTime = 5;
+let dragging = null, dragStartX = 0, dragStartVal = 0;
+let currentJobId = null, pollInterval = null;
+let currentFileId = null;   // for uploaded files
+let currentUrl = '';        // for remote URLs
+let activeTab = 'url';
+
+// YouTube player
+let ytPlayer = null, ytAPIReady = false, pendingYtId = null;
+let playerTimerInterval = null;
+
+// ── Tab switching ─────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (i === 0) === (tab === 'url')));
+  document.getElementById('tab-url').classList.toggle('active', tab === 'url');
+  document.getElementById('tab-upload').classList.toggle('active', tab === 'upload');
+  // Reset
+  resetSource();
+}
+
+function resetSource() {
+  currentFileId = null; currentUrl = '';
+  document.getElementById('videoInfo').classList.remove('visible');
+  document.getElementById('playerWrapper').style.display = 'none';
+  document.getElementById('infoNote').classList.remove('visible');
+  hideError(document.getElementById('fetchError'));
+  document.getElementById('timelineCard').style.display = 'none';
+  document.getElementById('settingsCard').style.display = 'none';
+  document.getElementById('nativePlayer').style.display = 'none';
+  document.getElementById('ytPlayer').innerHTML = '';
+  if (playerTimerInterval) clearInterval(playerTimerInterval);
+}
+
+// ── Upload ────────────────────────────────────────────────────
+const uploadArea = document.getElementById('uploadArea');
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault(); uploadArea.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFileSelect(file);
+});
+
+function handleFileSelect(file) {
+  if (!file) return;
+  const allowed = ['mp4','mov','avi','mkv','webm','m4v'];
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!allowed.includes(ext)) {
+    showError(document.getElementById('fetchError'), 'Formato não suportado. Use mp4, mov, avi, mkv ou webm.');
+    return;
+  }
+
+  const progress = document.getElementById('uploadProgress');
+  const bar = document.getElementById('uploadBarFill');
+  const pct = document.getElementById('uploadPct');
+  progress.classList.add('visible');
+  bar.style.width = '0%';
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', `${API}/upload`);
+
+  xhr.upload.onprogress = e => {
+    if (e.lengthComputable) {
+      const p = Math.round((e.loaded / e.total) * 100);
+      bar.style.width = p + '%';
+      pct.textContent = `Enviando... ${p}%`;
+    }
+  };
+
+  xhr.onload = () => {
+    progress.classList.remove('visible');
+    if (xhr.status === 200) {
+      const data = JSON.parse(xhr.responseText);
+      currentFileId = data.file_id;
+      currentUrl = '';
+      onVideoLoaded(data, file.name);
+      // Native player
+      showNativePlayer(`${API}/video/${data.file_id}`);
+    } else {
+      try {
+        const err = JSON.parse(xhr.responseText);
+        showError(document.getElementById('fetchError'), err.error);
+      } catch { showError(document.getElementById('fetchError'), 'Erro ao enviar arquivo.'); }
+    }
+  };
+  xhr.onerror = () => { progress.classList.remove('visible'); showError(document.getElementById('fetchError'), 'Falha na conexão.'); };
+  xhr.send(formData);
+}
+
+// ── YouTube IFrame API ────────────────────────────────────────
+function onYouTubeIframeAPIReady() {
+  ytAPIReady = true;
+  if (pendingYtId) initYTPlayer(pendingYtId);
+}
+
+function extractYTId(url) {
+  const m = url.match(/(?:v=|\/embed\/|\/shorts\/|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function initYTPlayer(videoId) {
+  if (!ytAPIReady) { pendingYtId = videoId; return; }
+  document.getElementById('nativePlayer').style.display = 'none';
+  document.getElementById('ytPlayer').style.display = 'block';
+  document.getElementById('playerWrapper').style.display = 'block';
+
+  if (ytPlayer && ytPlayer.loadVideoById) {
+    ytPlayer.loadVideoById(videoId); return;
+  }
+  ytPlayer = new YT.Player('ytPlayer', {
+    videoId,
+    playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
+    events: { onReady: startYTTimer }
+  });
+}
+
+function startYTTimer() {
+  clearInterval(playerTimerInterval);
+  playerTimerInterval = setInterval(() => {
+    if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
+    const t = ytPlayer.getCurrentTime() || 0;
+    updatePlayerClock(t);
+  }, 200);
+}
+
+// ── Native HTML5 player (uploads + IG/TT previews) ───────────
+function showNativePlayer(src) {
+  const vid = document.getElementById('nativePlayer');
+  document.getElementById('ytPlayer').style.display = 'none';
+  vid.style.display = 'block';
+  vid.src = src;
+  document.getElementById('playerWrapper').style.display = 'block';
+
+  clearInterval(playerTimerInterval);
+  playerTimerInterval = setInterval(() => updatePlayerClock(vid.currentTime || 0), 200);
+}
+
+function updatePlayerClock(t) {
+  document.getElementById('playerTimeLbl').textContent = formatTime(t);
+  if (videoDuration > 0) {
+    const ph = document.getElementById('playhead');
+    ph.style.display = 'block';
+    ph.style.left = ((t / videoDuration) * 100) + '%';
+  }
+}
+
+// Mark buttons
+function markStart() {
+  const t = getCurrentPlayerTime();
+  if (t === null) return;
+  startTime = Math.max(0, Math.min(t, endTime - 0.5));
+  updateTimeline();
+  flash(`✓ Início: ${formatTime(startTime)}`);
+}
+function markEnd() {
+  const t = getCurrentPlayerTime();
+  if (t === null) return;
+  endTime = Math.min(videoDuration, Math.max(t, startTime + 0.5));
+  updateTimeline();
+  flash(`✓ Fim: ${formatTime(endTime)}`);
+}
+function getCurrentPlayerTime() {
+  const vid = document.getElementById('nativePlayer');
+  if (vid.style.display !== 'none') return vid.currentTime;
+  if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function') return ytPlayer.getCurrentTime();
+  return null;
+}
+
+let flashTimer;
+function flash(msg) {
+  const el = document.getElementById('markFeedback');
+  el.textContent = msg;
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => el.textContent = '', 3000);
+}
+
+// ── Fetch remote URL info ─────────────────────────────────────
+async function fetchInfo() {
+  const url = document.getElementById('urlInput').value.trim();
+  const btn = document.getElementById('fetchBtn');
+  const errEl = document.getElementById('fetchError');
+  hideError(errEl);
+  if (!url) { showError(errEl, 'Cole uma URL válida.'); return; }
+
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    const res = await fetch(`${API}/info`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({url}) });
+    const data = await res.json();
+    if (!res.ok) { showError(errEl, data.error || 'Erro desconhecido'); return; }
+
+    currentUrl = url; currentFileId = '';
+    onVideoLoaded(data);
+
+    const ytId = extractYTId(url);
+    const platform = data.platform || '';
+
+    if (ytId) {
+      // YouTube — embedded player
+      document.getElementById('infoNote').classList.remove('visible');
+      initYTPlayer(ytId);
+    } else {
+      // Instagram / TikTok / other — try to stream via yt-dlp proxy isn't feasible,
+      // so we show a helpful note and let the user use the timeline only.
+      // We CAN offer a direct URL if yt-dlp exposes the direct stream.
+      showDirectStreamPlayer(url, platform);
+    }
+  } catch(e) {
+    showError(errEl, 'Não foi possível conectar ao servidor.');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Buscar';
+  }
+}
+
+async function showDirectStreamPlayer(url, platform) {
+  // Ask backend for a direct streamable URL
+  try {
+    const res = await fetch(`${API}/stream_url`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({url}) });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.stream_url) {
+        showNativePlayer(data.stream_url);
+        document.getElementById('infoNote').classList.remove('visible');
+        return;
+      }
+    }
+  } catch(e) {}
+  // Fallback note
+  const note = document.getElementById('infoNote');
+  note.textContent = 'ℹ Player de prévia não disponível para este link. Use a timeline abaixo para ajustar o tempo.';
+  note.classList.add('visible');
+  document.getElementById('playerWrapper').style.display = 'none';
+}
+
+function onVideoLoaded(data, fallbackTitle) {
+  videoDuration = data.duration;
+  startTime = 0; endTime = Math.min(5, videoDuration);
+
+  document.getElementById('videoTitle').textContent = data.title || fallbackTitle || 'Vídeo';
+  document.getElementById('videoDur').textContent = `⏱ ${formatTime(videoDuration)} · ${data.uploader || ''}`;
+  if (data.thumbnail) document.getElementById('videoThumb').src = data.thumbnail;
+  document.getElementById('videoInfo').classList.add('visible');
+  document.getElementById('totalDurLabel').textContent = formatTime(videoDuration);
+  document.getElementById('timelineCard').style.display = 'block';
+  document.getElementById('settingsCard').style.display = 'block';
+  updateTimeline();
+}
+
+// ── Timeline ──────────────────────────────────────────────────
+function updateTimeline() {
+  const s = (startTime / videoDuration) * 100;
+  const e = (endTime / videoDuration) * 100;
+  document.getElementById('fill').style.left = s + '%';
+  document.getElementById('fill').style.width = (e - s) + '%';
+  document.getElementById('handleStart').style.left = s + '%';
+  document.getElementById('handleEnd').style.left = e + '%';
+  document.getElementById('startDisplay').textContent = formatTime(startTime);
+  document.getElementById('endDisplay').textContent = formatTime(endTime);
+  const dur = endTime - startTime;
+  document.getElementById('durationBadge').textContent = `⏱ ${dur.toFixed(1)}s`;
+  document.getElementById('durationWarning').style.display = dur > 60 ? 'block' : 'none';
+}
+
+['handleStart','handleEnd'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('mousedown', e => { dragging = id; dragStartX = e.clientX; dragStartVal = id === 'handleStart' ? startTime : endTime; e.preventDefault(); });
+  el.addEventListener('touchstart', e => { dragging = id; dragStartX = e.touches[0].clientX; dragStartVal = id === 'handleStart' ? startTime : endTime; e.preventDefault(); }, {passive:false});
+});
+document.addEventListener('mousemove', e => { if (!dragging) return; move(e.clientX); });
+document.addEventListener('touchmove', e => { if (!dragging) return; move(e.touches[0].clientX); }, {passive:true});
+document.addEventListener('mouseup', () => dragging = null);
+document.addEventListener('touchend', () => dragging = null);
+
+function move(clientX) {
+  const rect = document.getElementById('track').getBoundingClientRect();
+  const v = Math.max(0, Math.min(videoDuration, dragStartVal + ((clientX - dragStartX) / rect.width) * videoDuration));
+  if (dragging === 'handleStart') startTime = Math.max(0, Math.min(v, endTime - 0.5));
+  else endTime = Math.min(videoDuration, Math.max(v, startTime + 0.5));
+  updateTimeline();
+}
+
+document.getElementById('track').addEventListener('click', e => {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const t = ((e.clientX - rect.left) / rect.width) * videoDuration;
+  if (t < (startTime + endTime) / 2) startTime = Math.max(0, Math.min(t, endTime - 0.5));
+  else endTime = Math.min(videoDuration, Math.max(t, startTime + 0.5));
+  updateTimeline();
+});
+
+// ── Generate GIF ──────────────────────────────────────────────
+async function generateGif() {
+  const errEl = document.getElementById('generateError');
+  const btn = document.getElementById('generateBtn');
+  hideError(errEl);
+  document.getElementById('resultArea').classList.remove('visible');
+  document.getElementById('statusArea').classList.add('visible');
+  btn.disabled = true;
+
+  const body = {
+    start: startTime, end: endTime,
+    width: parseInt(document.getElementById('widthSelect').value),
+    fps: parseInt(document.getElementById('fpsSelect').value),
+  };
+  if (currentFileId) body.file_id = currentFileId;
+  else body.url = currentUrl;
+
+  try {
+    const res = await fetch(`${API}/generate`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) { showError(errEl, data.error); document.getElementById('statusArea').classList.remove('visible'); btn.disabled = false; return; }
+    currentJobId = data.job_id;
+    pollStatus();
+  } catch(e) {
+    showError(errEl, 'Servidor inacessível.');
+    document.getElementById('statusArea').classList.remove('visible');
+    btn.disabled = false;
+  }
+}
+
+const statusLabels = { downloading:'Baixando segmento do vídeo...', downloading_full:'Baixando vídeo completo...', converting:'Convertendo para GIF com paleta otimizada...', starting:'Iniciando...' };
+
+function pollStatus() {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`${API}/status/${currentJobId}`);
+      const job = await res.json();
+      if (statusLabels[job.status]) document.getElementById('statusText').textContent = statusLabels[job.status];
+      if (job.status === 'done') { clearInterval(pollInterval); showResult(job); }
+      else if (job.status === 'error') {
+        clearInterval(pollInterval);
+        document.getElementById('statusArea').classList.remove('visible');
+        showError(document.getElementById('generateError'), job.error || 'Erro desconhecido.');
+        document.getElementById('generateBtn').disabled = false;
+      }
+    } catch(e) {}
+  }, 1500);
+}
+
+function showResult(job) {
+  document.getElementById('statusArea').classList.remove('visible');
+  document.getElementById('resultArea').classList.add('visible');
+  document.getElementById('gifPreview').src = `${API}/preview/${currentJobId}?t=${Date.now()}`;
+  document.getElementById('resultMeta').innerHTML = `
+    <span class="meta-chip">📦 ${job.size_mb} MB</span>
+    <span class="meta-chip">🎞 ${job.fps_used} FPS</span>
+    <span class="meta-chip">📐 ${job.width_used}px</span>
+    <span class="meta-chip">⏱ ${(endTime - startTime).toFixed(1)}s</span>`;
+  document.getElementById('downloadBtn').onclick = () => window.location.href = `${API}/download/${currentJobId}`;
+  document.getElementById('generateBtn').disabled = false;
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function formatTime(s) {
+  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+function showError(el, msg) { el.textContent = 'Erro: ' + msg; el.classList.add('visible'); }
+function hideError(el) { el.classList.remove('visible'); }
+
+document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') fetchInfo(); });
+</script>
+</body>
+</html>
