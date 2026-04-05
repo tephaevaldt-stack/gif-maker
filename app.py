@@ -245,7 +245,7 @@ def generate_gif():
                 '-i', palette_path,
                 '-lavfi', f'fps={fps},scale={width}:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle',
                 gif_path
-            ], capture_output=True, timeout=180)
+            ], capture_output=True, timeout=300)
 
             if r.returncode != 0 or not os.path.exists(gif_path):
                 jobs[job_id] = {'status': 'error', 'error': 'Falha ao gerar GIF.'}
