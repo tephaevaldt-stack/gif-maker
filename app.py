@@ -240,8 +240,8 @@ def generate_gif():
                 '-t', str(duration), 
                 '-i', video_path,
                 '-vf', f'fps={fps},scale={width}:-1',
-                '-threads', '1',  # Força o uso de apenas 1 núcleo (economiza RAM)
-                '-preset', 'ultrafast', # Processa o mais simples possível
+                '-threads', '1', 
+                '-preset', 'ultrafast', 
                 gif_path
             ], capture_output=True, timeout=600)
 
