@@ -216,7 +216,7 @@ def generate_gif():
                     '--force-keyframes-at-cuts',
                     '--no-warnings'] + YTDLP_BYPASS_FLAGS + ['-o', video_path, url]
 
-                dl = subprocess.run(dl_cmd, capture_output=True, text=True, timeout=180)
+                dl = subprocess.run(dl_cmd, capture_output=True, text=True, timeout=600)
 
                 if dl.returncode != 0 or not os.path.exists(video_path):
                     jobs[job_id]['status'] = 'downloading_full'
