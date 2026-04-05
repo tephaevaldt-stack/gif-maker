@@ -235,13 +235,19 @@ def generate_gif():
             duration = end - start
 
             r = subprocess.run([
-                'ffmpeg', '-y', '-ss', str(start), '-t', str(duration), '-i', video_path,
-                '-vf', f'fps={fps},scale={width}:-1:flags=lanczos',
+                'ffmpeg', '-y', 
+                '-ss', str(start), 
+                '-t', str(duration), 
+                '-i', video_path,
+                '-vf', f'fps={fps},scale={width}:-1',
+                '-threads', '1',  # Força o uso de apenas 1 núcleo (economiza RAM)
+                '-preset', 'ultrafast', # Processa o mais simples possível
                 gif_path
-            ], capture_output=True, timeout=300)
+            ], capture_output=True, timeout=600)
 
-            if r.returncode != 0 or not os.path.exists(gif_path):
-                jobs[job_id] = {'status': 'error', 'error': 'O servidor ficou sem memória. Tente um vídeo menor ou menos segundos.'}
+            if r.returncode != 0 
+            error_msg = r.stderr.decode() if r.stderr else "Erro desconhecido de memória"
+                jobs[job_id] = {'status': 'error', 'error': f'Falha técnica: {error_msg[:100]}'}
                 return
 
             size_mb = os.path.getsize(gif_path) / (1024 * 1024)
