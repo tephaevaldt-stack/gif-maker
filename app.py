@@ -234,21 +234,14 @@ def generate_gif():
             jobs[job_id]['status'] = 'converting'
             duration = end - start
 
-            subprocess.run([
-                'ffmpeg', '-y', '-ss', str(start), '-t', str(duration), '-i', video_path,
-                '-vf', f'fps={fps},scale={width}:-1:flags=lanczos,palettegen=stats_mode=full',
-                palette_path
-            ], capture_output=True, timeout=60)
-
             r = subprocess.run([
                 'ffmpeg', '-y', '-ss', str(start), '-t', str(duration), '-i', video_path,
-                '-i', palette_path,
-                '-lavfi', f'fps={fps},scale={width}:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle',
+                '-vf', f'fps={fps},scale={width}:-1:flags=lanczos',
                 gif_path
             ], capture_output=True, timeout=300)
 
             if r.returncode != 0 or not os.path.exists(gif_path):
-                jobs[job_id] = {'status': 'error', 'error': 'Falha ao gerar GIF.'}
+                jobs[job_id] = {'status': 'error', 'error': 'O servidor ficou sem memória. Tente um vídeo menor ou menos segundos.'}
                 return
 
             size_mb = os.path.getsize(gif_path) / (1024 * 1024)
