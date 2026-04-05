@@ -236,7 +236,7 @@ def generate_gif():
 
             subprocess.run([
                 'ffmpeg', '-y', '-ss', str(start), '-t', str(duration), '-i', video_path,
-                '-vf', f'fps={fps},scale={width}:-1:flags=lanczos,palettegen=stats_mode=diff',
+                '-vf', f'fps={fps},scale={width}:-1:flags=lanczos,palettegen=stats_mode=full',
                 palette_path
             ], capture_output=True, timeout=60)
 
